@@ -1,5 +1,6 @@
 # flatpak-builder output
 .flatpak-builder/
+build-dir/
 repo/
 build/
 *.flatpak

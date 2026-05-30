@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+
+  <!-- NIF mesh files (NetImmerse / Gamebryo format).
+       Magic matches the ASCII header present in all NIF versions:
+         v4.x (Morrowind era): "NetImmerse File Format, Version ..."
+         v20.x (Oblivion+):    "Gamebryo File Format, Version ..."
+       KF animation files share the same magic prefix, so the glob
+       is the primary differentiator for normal usage. Magic matching
+       handles extensionless or misnamed files in file managers. -->
+  <mime-type type="application/vnd.gamebryo-nif">
+    <comment>Gamebryo/NetImmerse mesh (NIF)</comment>
+    <glob-deleteall/>
+    <glob pattern="*.nif"/>
+    <magic priority="50">
+      <match type="string" offset="0" value="Gamebryo File Format"/>
+    </magic>
+    <magic priority="50">
+      <match type="string" offset="0" value="NetImmerse File Format"/>
+    </magic>
+  </mime-type>
+
+  <!-- KF animation files — same header magic as NIF, glob is authoritative -->
+  <mime-type type="application/vnd.gamebryo-kf">
+    <comment>Gamebryo/NetImmerse animation (KF)</comment>
+    <glob-deleteall/>
+    <glob pattern="*.kf"/>
+  </mime-type>
+
+  <!-- KFM animation manifest files -->
+  <mime-type type="application/vnd.gamebryo-kfm">
+    <comment>Gamebryo/NetImmerse animation manifest (KFM)</comment>
+    <glob-deleteall/>
+    <glob pattern="*.kfm"/>
+    <magic priority="50">
+      <match type="string" offset="0" value="NetImmerse KFM File Format"/>
+    </magic>
+  </mime-type>
+
+</mime-info>

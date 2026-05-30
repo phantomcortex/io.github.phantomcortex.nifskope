@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop-application">
-  <id>com.phantomcortex.nifskope</id>
+  <id>io.github.phantomcortex.nifskope</id>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>BSD-3-Clause</project_license>
 
@@ -27,7 +27,7 @@
     </p>
   </description>
 
-  <launchable type="desktop-id">com.phantomcortex.nifskope.desktop</launchable>
+  <launchable type="desktop-id">io.github.phantomcortex.nifskope.desktop</launchable>
 
   <!-- TODO: Add real screenshots once the app is building successfully. -->
   <!-- <screenshots> -->
@@ -45,8 +45,8 @@
   <!-- <developer> -->
   <!--   <name>fo76utils</name> -->
   <!-- </developer> -->
-  <developer id="com.phantomcortex">
-    <name>PhantomCortex (packager)</name>
+  <developer id="io.github.phantomcortex">
+    <name>PhantomCortex</name>
   </developer>
 
   <releases>
