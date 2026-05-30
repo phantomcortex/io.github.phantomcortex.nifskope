@@ -1,0 +1,13 @@
+[Desktop Entry]
+Name=NifSkope
+GenericName=NIF File Editor
+Comment=View and edit NIF 3D model files from Bethesda games
+Exec=NifSkope %f
+Icon=com.phantomcortex.nifskope
+Terminal=false
+Type=Application
+Categories=Graphics;3DGraphics;
+MimeType=application/x-nif;
+Keywords=nif;nifskope;bethesda;skyrim;fallout;starfield;3d;model;
+StartupNotify=true
+StartupWMClass=NifSkope

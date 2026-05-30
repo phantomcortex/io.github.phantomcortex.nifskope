@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>com.phantomcortex.nifskope</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>BSD-3-Clause</project_license>
+
+  <name>NifSkope</name>
+  <summary>View and edit NIF 3D model files from Bethesda games</summary>
+
+  <description>
+    <p>
+      NifSkope is an open-source tool for opening, viewing, and editing NIF
+      (NetImmerse Format) 3D model files used in games including Morrowind,
+      Oblivion, Skyrim, Fallout 3, Fallout: New Vegas, Fallout 4, Fallout 76,
+      and Starfield.
+    </p>
+    <p>
+      This package tracks the fo76utils fork (NifSkope 2.0 dev series), which
+      adds Starfield material rendering, glTF import/export, Qt 6 and OpenGL 4
+      core profile support, advanced Fallout material editing, and batch
+      processing of multiple NIF files.
+    </p>
+    <p>
+      Note: This is an unofficial third-party Flatpak package. It is not
+      affiliated with or endorsed by the NIF File Format Library and Tools
+      project or the fo76utils project.
+    </p>
+  </description>
+
+  <launchable type="desktop-id">com.phantomcortex.nifskope.desktop</launchable>
+
+  <!-- TODO: Add real screenshots once the app is building successfully. -->
+  <!-- <screenshots> -->
+  <!--   <screenshot type="default"> -->
+  <!--     <image>https://example.com/screenshot.png</image> -->
+  <!--     <caption>Main window showing a Starfield mesh</caption> -->
+  <!--   </screenshot> -->
+  <!-- </screenshots> -->
+
+  <url type="homepage">https://github.com/phantomcortex/nifskope</url>
+  <url type="bugtracker">https://github.com/phantomcortex/nifskope/issues</url>
+  <url type="vcs-browser">https://github.com/phantomcortex/nifskope</url>
+
+  <!-- TODO: Replace with upstream contact once/if they maintain one. -->
+  <!-- <developer> -->
+  <!--   <name>fo76utils</name> -->
+  <!-- </developer> -->
+  <developer id="com.phantomcortex">
+    <name>PhantomCortex (packager)</name>
+  </developer>
+
+  <releases>
+    <!-- TODO: Replace with proper upstream version tags when available.
+         fo76utils/nifskope uses dev snapshots, not formal releases.
+         Flathub requires at least one release entry with a real date. -->
+    <release version="2.0.dev11" date="2026-03-23">
+      <description>
+        <p>Upstream fo76utils fork snapshot — Starfield material rendering,
+           glTF export/import, Qt 6 support, and many Fallout fixes.</p>
+      </description>
+    </release>
+  </releases>
+
+  <content_rating type="oars-1.1"/>
+
+  <supports>
+    <control>pointing</control>
+    <control>keyboard</control>
+  </supports>
+</component>

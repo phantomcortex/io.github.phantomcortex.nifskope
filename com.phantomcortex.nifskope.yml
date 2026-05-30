@@ -1,0 +1,76 @@
+app-id: com.phantomcortex.nifskope
+runtime: org.kde.Platform
+runtime-version: '6.9'
+sdk: org.kde.Sdk
+command: NifSkope
+
+finish-args:
+  - --share=ipc
+  - --socket=x11
+  - --socket=wayland
+  - --device=dri
+  - --filesystem=home
+  - --env=QT_AUTO_SCREEN_SCALE_FACTOR=1
+
+modules:
+  - name: nifskope
+    buildsystem: qmake
+    # NifSkope.pro has no INSTALLS/target.path — make install is a no-op.
+    # All installation is handled manually in post-install below.
+    no-make-install: true
+    config-opts:
+      - CONFIG+=release
+    post-install:
+      # Binary
+      - install -Dm755 release/NifSkope /app/bin/NifSkope
+      # Runtime resources — NifSkope resolves these via applicationDirPath()
+      # first, then /usr/share/nifskope/ (which is the runtime mount in Flatpak,
+      # not our /app prefix). Placing them next to the binary is the safe path.
+      # The .pro build already assembles shaders/nif.xml/kfm.xml/style.qss
+      # into release/, so we copy from there.
+      - cp -r release/shaders /app/bin/shaders
+      - install -Dm644 release/nif.xml  /app/bin/nif.xml
+      - install -Dm644 release/kfm.xml  /app/bin/kfm.xml
+      - install -Dm644 release/style.qss /app/bin/style.qss
+      - cp -r res/lang /app/bin/lang
+      # Desktop integration
+      - install -Dm644 res/nifskope.png
+          /app/share/icons/hicolor/256x256/apps/com.phantomcortex.nifskope.png
+      - install -Dm644 com.phantomcortex.nifskope.desktop
+          /app/share/applications/com.phantomcortex.nifskope.desktop
+      - install -Dm644 com.phantomcortex.nifskope.metainfo.xml
+          /app/share/metainfo/com.phantomcortex.nifskope.metainfo.xml
+    sources:
+      # ── Main source ───────────────────────────────────────────────────────
+      - type: git
+        url: https://github.com/phantomcortex/nifskope
+        commit: 8e117d5406a561e057db37f967d84773aa8df833
+        disable-submodules: true
+
+      # ── Submodules (pinned to the SHAs recorded in .gitmodules) ──────────
+      - type: git
+        url: https://github.com/qhull/qhull.git
+        commit: d1c2fc0caa5f644f3a0f220290d4a868c68ed4f6
+        dest: lib/qhull
+      - type: git
+        url: https://github.com/g-truc/gli.git
+        commit: 7efdcf87dd51cfe828b0da1068f2072542b5631a
+        dest: lib/gli
+      - type: git
+        url: https://github.com/zeux/meshoptimizer.git
+        commit: 3bc0641d0a483e29693c43bc4806757a567955b8
+        dest: lib/meshoptimizer
+      - type: git
+        url: https://github.com/niftools/kfmxml.git
+        commit: 91eff92daf197f0c5376740ed4b000d064138ec2
+        dest: build/docsys/kfmxml
+      - type: git
+        url: https://github.com/niftools/nifxml.git
+        commit: 970a6238218a106daaeb89a61bcda0eeaf9d08c4
+        dest: build/docsys/nifxml
+
+      # ── Desktop integration files (from this packaging repo) ─────────────
+      - type: file
+        path: com.phantomcortex.nifskope.desktop
+      - type: file
+        path: com.phantomcortex.nifskope.metainfo.xml
