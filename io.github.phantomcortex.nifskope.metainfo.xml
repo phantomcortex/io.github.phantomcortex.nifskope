@@ -29,30 +29,26 @@
 
   <launchable type="desktop-id">io.github.phantomcortex.nifskope.desktop</launchable>
 
-  <!-- TODO: Add real screenshots once the app is building successfully. -->
-  <!-- <screenshots> -->
-  <!--   <screenshot type="default"> -->
-  <!--     <image>https://example.com/screenshot.png</image> -->
-  <!--     <caption>Main window showing a Starfield mesh</caption> -->
-  <!--   </screenshot> -->
-  <!-- </screenshots> -->
+  <screenshots>
+    <screenshot type="default">
+      <image width="5120" height="2808">https://raw.githubusercontent.com/phantomcortex/io.github.phantomcortex.nifskope/main/screenshots/screenshot-skyrim-dragon.png</image>
+      <caption>Main window displaying Alduin's dragon model from Skyrim</caption>
+    </screenshot>
+    <screenshot>
+      <image width="2882" height="1936">https://raw.githubusercontent.com/phantomcortex/io.github.phantomcortex.nifskope/main/screenshots/screenshot-block-inspector.png</image>
+      <caption>Block inspector showing NIF file header data</caption>
+    </screenshot>
+  </screenshots>
 
   <url type="homepage">https://github.com/phantomcortex/nifskope</url>
   <url type="bugtracker">https://github.com/phantomcortex/nifskope/issues</url>
   <url type="vcs-browser">https://github.com/phantomcortex/nifskope</url>
 
-  <!-- TODO: Replace with upstream contact once/if they maintain one. -->
-  <!-- <developer> -->
-  <!--   <name>fo76utils</name> -->
-  <!-- </developer> -->
   <developer id="io.github.phantomcortex">
     <name>PhantomCortex</name>
   </developer>
 
   <releases>
-    <!-- TODO: Replace with proper upstream version tags when available.
-         fo76utils/nifskope uses dev snapshots, not formal releases.
-         Flathub requires at least one release entry with a real date. -->
     <release version="2.0.dev11" date="2026-03-23">
       <description>
         <p>Upstream fo76utils fork snapshot — Starfield material rendering,
