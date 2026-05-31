@@ -31,12 +31,8 @@
 
   <screenshots>
     <screenshot type="default">
-      <image width="5120" height="2808">https://raw.githubusercontent.com/phantomcortex/io.github.phantomcortex.nifskope/main/screenshots/screenshot-skyrim-dragon.png</image>
-      <caption>Main window displaying Alduin's dragon model from Skyrim</caption>
-    </screenshot>
-    <screenshot>
       <image width="2882" height="1936">https://raw.githubusercontent.com/phantomcortex/io.github.phantomcortex.nifskope/main/screenshots/screenshot-block-inspector.png</image>
-      <caption>Block inspector showing NIF file header data</caption>
+      <caption>Block inspector showing NIF file header data for Alduin's dragon mesh from Skyrim</caption>
     </screenshot>
   </screenshots>
 

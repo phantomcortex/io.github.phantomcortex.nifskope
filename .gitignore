@@ -6,6 +6,9 @@ build/
 *.flatpak
 *.oci.tar
 
+# NifSkope user config — not for committing (contains user-specific paths)
+NifSkope 2.0.conf
+
 # Editor junk
 .vscode/
 *.swp

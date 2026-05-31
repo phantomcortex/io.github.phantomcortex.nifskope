@@ -2,14 +2,17 @@ app-id: io.github.phantomcortex.nifskope
 runtime: org.kde.Platform
 runtime-version: '6.9'
 sdk: org.kde.Sdk
-command: NifSkope
+command: nifskope-wrapper
 
 finish-args:
   - --share=ipc
   - --socket=x11
   - --socket=wayland
   - --device=dri
-  - --filesystem=home
+  - --filesystem=xdg-documents
+  - --filesystem=~/Games
+  - --filesystem=~/.local/share/Steam/steamapps/common
+  - --filesystem=~/.var/app/com.valvesoftware.Steam/.local/share/Steam/steamapps/common
   - --env=QT_AUTO_SCREEN_SCALE_FACTOR=1
 
 modules:
@@ -21,8 +24,9 @@ modules:
     config-opts:
       - CONFIG+=release
     post-install:
-      # Binary
+      # Binary + wrapper
       - install -Dm755 release/NifSkope /app/bin/NifSkope
+      - install -Dm755 nifskope-wrapper /app/bin/nifskope-wrapper
       # Runtime resources — NifSkope resolves these via applicationDirPath()
       # first, then /usr/share/nifskope/ (which is the runtime mount in Flatpak,
       # not our /app prefix). Placing them next to the binary is the safe path.
@@ -78,3 +82,5 @@ modules:
         path: io.github.phantomcortex.nifskope.metainfo.xml
       - type: file
         path: io.github.phantomcortex.nifskope.mime.xml
+      - type: file
+        path: nifskope-wrapper

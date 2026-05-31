@@ -1,0 +1,131 @@
+#!/usr/bin/env python3
+"""
+NifSkope first-run config generator.
+
+On first launch, writes NifSkope 2.0.conf with Steam game paths
+pre-populated from both system Steam and Flatpak Steam installs.
+Subsequent launches skip straight to exec.
+"""
+
+import os
+import struct
+import sys
+
+NIFSKOPE = '/app/bin/NifSkope'
+
+# (NifSkope internal game name, [Steam steamapps/common folder candidates])
+GAME_DEFS = [
+    ('Fallout 3 / New Vegas', ['Fallout New Vegas', 'Fallout 3 goty', 'Fallout 3']),
+    ('Fallout 4',             ['Fallout 4']),
+    ('Fallout 76',            ['Fallout 76']),
+    ('Morrowind',             ['Morrowind']),
+    ('Oblivion',              ['Oblivion']),
+    ('Skyrim',                ['Skyrim']),
+    ('Skyrim SE',             ['Skyrim Special Edition']),
+    ('Starfield',             ['Starfield']),
+    # 'Other Games' has no path; NifSkope uses it as a catch-all status slot.
+    ('Other Games',           []),
+]
+
+
+# ── Qt QDataStream helpers ────────────────────────────────────────────────────
+
+def _u32(n):
+    return struct.pack('>I', n)
+
+def _qstring(s):
+    enc = s.encode('utf-16-be')
+    return _u32(len(enc)) + enc
+
+def _qv_string(s):
+    return _u32(10) + _qstring(s)   # QVariant type 10 = QString
+
+def _qv_bool(b):
+    return _u32(1) + (b'\x01' if b else b'\x00')  # QVariant type 1 = bool
+
+def _qvariantmap(d):
+    """Encode dict[str, bytes] as QVariantMap (QMap<QString, QVariant>).
+    QMap is always sorted by key."""
+    out = _u32(8) + _u32(len(d))
+    for key in sorted(d):
+        out += _qstring(key) + d[key]
+    return out
+
+def _ini_variant(data):
+    """Wrap raw QDataStream bytes as an @Variant(...) INI string.
+    Uses conservative per-byte escaping that Qt's INI parser always accepts."""
+    parts = ['\\0' if b == 0 else '\\x{:02x}'.format(b) for b in data]
+    return '@Variant(' + ''.join(parts) + ')'
+
+
+# ── Game path discovery ───────────────────────────────────────────────────────
+
+def _find_game(steam_roots, candidates):
+    for root in steam_roots:
+        for folder in candidates:
+            path = os.path.join(root, folder)
+            if os.path.isdir(path):
+                return path
+    return None
+
+
+# ── Config generation ─────────────────────────────────────────────────────────
+
+def generate_config(home):
+    steam_roots = [
+        # System (native package) Steam
+        os.path.join(home, '.local', 'share', 'Steam', 'steamapps', 'common'),
+        # Flatpak Steam
+        os.path.join(home, '.var', 'app', 'com.valvesoftware.Steam',
+                     '.local', 'share', 'Steam', 'steamapps', 'common'),
+    ]
+
+    paths = {}
+    status = {}
+
+    for name, candidates in GAME_DEFS:
+        if candidates:
+            found = _find_game(steam_roots, candidates)
+            if found:
+                paths[name] = _qv_string(found)
+                status[name] = _qv_bool(True)
+            else:
+                status[name] = _qv_bool(False)
+        else:
+            # 'Other Games' — status-only slot, always enabled
+            status[name] = _qv_bool(True)
+
+    lines = [
+        '[General]',
+        'Display%20Version=2.0 Dev 11 Flatpak',
+        'Game%20Manager%20Version=2',
+    ]
+    if paths:
+        lines.append('Game%20Paths=' + _ini_variant(_qvariantmap(paths)))
+    lines.append('Game%20Status=' + _ini_variant(_qvariantmap(status)))
+    lines.append('Version=2.0.dev11')
+    lines.append('')
+    return '\n'.join(lines)
+
+
+# ── Entry point ───────────────────────────────────────────────────────────────
+
+def main():
+    xdg_config = os.environ.get(
+        'XDG_CONFIG_HOME',
+        os.path.join(os.path.expanduser('~'), '.config'),
+    )
+    conf_dir = os.path.join(xdg_config, 'NifTools')
+    conf_path = os.path.join(conf_dir, 'NifSkope 2.0.conf')
+
+    if not os.path.exists(conf_path):
+        home = os.path.expanduser('~')
+        os.makedirs(conf_dir, exist_ok=True)
+        with open(conf_path, 'w', encoding='utf-8') as f:
+            f.write(generate_config(home))
+
+    os.execv(NIFSKOPE, [NIFSKOPE] + sys.argv[1:])
+
+
+if __name__ == '__main__':
+    main()
