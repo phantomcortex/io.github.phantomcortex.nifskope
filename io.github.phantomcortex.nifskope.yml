@@ -11,8 +11,8 @@ finish-args:
   - --device=dri
   - --filesystem=xdg-documents
   - --filesystem=~/Games
-  - --filesystem=~/.local/share/Steam/steamapps/common
-  - --filesystem=~/.var/app/com.valvesoftware.Steam/.local/share/Steam/steamapps/common
+  - --filesystem=~/.local/share/Steam/steamapps
+  - --filesystem=~/.var/app/com.valvesoftware.Steam/.local/share/Steam/steamapps
   - --env=QT_AUTO_SCREEN_SCALE_FACTOR=1
 
 modules:

@@ -2,18 +2,26 @@
 """
 NifSkope first-run config generator.
 
-On first launch, writes NifSkope 2.0.conf with Steam game paths
-pre-populated from both system Steam and Flatpak Steam installs.
-Subsequent launches skip straight to exec.
+On first launch, writes NifSkope 2.0.conf with Game%20Paths, Game%20Status,
+and Game%20Folders (pre-scanned BSA/BA2 archives) for every detected game.
+
+Discovery order:
+  1. Steam's libraryfolders.vdf (system + Flatpak Steam)
+  2. ~/Games/*/steamapps/common  (Heroic/custom Steam libraries)
+  3. Canonical defaults (in case VDF is missing)
+
+Subsequent launches skip straight to exec — zero overhead.
 """
 
 import os
+import re
 import struct
 import sys
 
 NIFSKOPE = '/app/bin/NifSkope'
 
-# (NifSkope internal game name, [Steam steamapps/common folder candidates])
+# NifSkope internal game name → ordered list of Steam folder name candidates.
+# First candidate found wins; for "Fallout 3 / New Vegas" priority is explicit.
 GAME_DEFS = [
     ('Fallout 3 / New Vegas', ['Fallout New Vegas', 'Fallout 3 goty', 'Fallout 3']),
     ('Fallout 4',             ['Fallout 4']),
@@ -23,7 +31,7 @@ GAME_DEFS = [
     ('Skyrim',                ['Skyrim']),
     ('Skyrim SE',             ['Skyrim Special Edition']),
     ('Starfield',             ['Starfield']),
-    # 'Other Games' has no path; NifSkope uses it as a catch-all status slot.
+    # Status-only slot; NifSkope uses it as a catch-all. No path to detect.
     ('Other Games',           []),
 ]
 
@@ -38,70 +46,139 @@ def _qstring(s):
     return _u32(len(enc)) + enc
 
 def _qv_string(s):
-    return _u32(10) + _qstring(s)   # QVariant type 10 = QString
+    return _u32(10) + _qstring(s)      # QVariant type 10 = QString
 
 def _qv_bool(b):
-    return _u32(1) + (b'\x01' if b else b'\x00')  # QVariant type 1 = bool
+    return _u32(1) + (b'\x01' if b else b'\x00')   # QVariant type 1 = bool
+
+def _qv_stringlist(strings):
+    # QVariant type 11 = QStringList: count then bare QStrings (no inner type)
+    out = _u32(11) + _u32(len(strings))
+    for s in strings:
+        out += _qstring(s)
+    return out
 
 def _qvariantmap(d):
-    """Encode dict[str, bytes] as QVariantMap (QMap<QString, QVariant>).
-    QMap is always sorted by key."""
+    """Encode dict[str, bytes] as QVariantMap. QMap is always key-sorted."""
     out = _u32(8) + _u32(len(d))
     for key in sorted(d):
         out += _qstring(key) + d[key]
     return out
 
 def _ini_variant(data):
-    """Wrap raw QDataStream bytes as an @Variant(...) INI string.
-    Uses conservative per-byte escaping that Qt's INI parser always accepts."""
+    """Wrap raw QDataStream bytes as @Variant(...) for Qt's INI parser."""
     parts = ['\\0' if b == 0 else '\\x{:02x}'.format(b) for b in data]
     return '@Variant(' + ''.join(parts) + ')'
 
 
-# ── Game path discovery ───────────────────────────────────────────────────────
+# ── Steam library discovery ───────────────────────────────────────────────────
 
-def _find_game(steam_roots, candidates):
-    for root in steam_roots:
+def _parse_vdf(vdf_path):
+    """Return steamapps/common paths from a libraryfolders.vdf file."""
+    try:
+        text = open(vdf_path, encoding='utf-8', errors='replace').read()
+        lib_paths = re.findall(r'"path"\s+"([^"]+)"', text)
+        return [os.path.join(p, 'steamapps', 'common') for p in lib_paths]
+    except OSError:
+        return []
+
+def _get_steam_roots(home):
+    roots = []
+
+    # 1. Parse libraryfolders.vdf from system Steam and Flatpak Steam.
+    for vdf in [
+        os.path.join(home, '.local', 'share', 'Steam',
+                     'steamapps', 'libraryfolders.vdf'),
+        os.path.join(home, '.var', 'app', 'com.valvesoftware.Steam',
+                     '.local', 'share', 'Steam',
+                     'steamapps', 'libraryfolders.vdf'),
+    ]:
+        for path in _parse_vdf(vdf):
+            if path not in roots:
+                roots.append(path)
+
+    # 2. Scan ~/Games/*/steamapps/common (custom library under ~/Games).
+    games_dir = os.path.join(home, 'Games')
+    try:
+        for entry in os.scandir(games_dir):
+            if not entry.is_dir():
+                continue
+            candidate = os.path.join(entry.path, 'steamapps', 'common')
+            if os.path.isdir(candidate) and candidate not in roots:
+                roots.append(candidate)
+    except OSError:
+        pass
+
+    # 3. Canonical defaults — always present as fallbacks.
+    for default in [
+        os.path.join(home, '.local', 'share', 'Steam', 'steamapps', 'common'),
+        os.path.join(home, '.var', 'app', 'com.valvesoftware.Steam',
+                     '.local', 'share', 'Steam', 'steamapps', 'common'),
+    ]:
+        if default not in roots:
+            roots.append(default)
+
+    return roots
+
+
+# ── Game detection + archive scanning ────────────────────────────────────────
+
+def _find_game(roots, candidates):
+    """Return the first existing game directory, trying roots × candidates."""
+    for root in roots:
         for folder in candidates:
             path = os.path.join(root, folder)
             if os.path.isdir(path):
                 return path
     return None
 
+def _scan_archives(game_path):
+    """Return sorted list of full paths to .bsa/.ba2 files in Data/."""
+    data_dir = os.path.join(game_path, 'Data')
+    archives = []
+    try:
+        for entry in os.scandir(data_dir):
+            if entry.is_file() and entry.name.lower().endswith(('.bsa', '.ba2')):
+                archives.append(entry.path)
+    except OSError:
+        pass
+    return sorted(archives)
+
 
 # ── Config generation ─────────────────────────────────────────────────────────
 
 def generate_config(home):
-    steam_roots = [
-        # System (native package) Steam
-        os.path.join(home, '.local', 'share', 'Steam', 'steamapps', 'common'),
-        # Flatpak Steam
-        os.path.join(home, '.var', 'app', 'com.valvesoftware.Steam',
-                     '.local', 'share', 'Steam', 'steamapps', 'common'),
-    ]
+    roots = _get_steam_roots(home)
 
-    paths = {}
-    status = {}
+    paths   = {}   # Game%20Paths:   game name → QVariant(QString path)
+    status  = {}   # Game%20Status:  game name → QVariant(bool)
+    folders = {}   # Game%20Folders: game name → QVariant(QStringList archives)
 
     for name, candidates in GAME_DEFS:
-        if candidates:
-            found = _find_game(steam_roots, candidates)
-            if found:
-                paths[name] = _qv_string(found)
-                status[name] = _qv_bool(True)
-            else:
-                status[name] = _qv_bool(False)
-        else:
-            # 'Other Games' — status-only slot, always enabled
+        if not candidates:
+            status[name] = _qv_bool(True)   # 'Other Games' always enabled
+            continue
+
+        found = _find_game(roots, candidates)
+        if found:
+            paths[name]  = _qv_string(found)
             status[name] = _qv_bool(True)
+            archives = _scan_archives(found)
+            if archives:
+                folders[name] = _qv_stringlist(archives)
+        else:
+            status[name] = _qv_bool(False)
 
     lines = [
         '[General]',
         'Display%20Version=2.0 Dev 11 Flatpak',
         'Game%20Manager%20Version=2',
     ]
+    # Keys in alphabetical order to match Qt's INI write order.
+    if folders:
+        lines.append('Game%20Folders=' + _ini_variant(_qvariantmap(folders)))
     if paths:
-        lines.append('Game%20Paths=' + _ini_variant(_qvariantmap(paths)))
+        lines.append('Game%20Paths='   + _ini_variant(_qvariantmap(paths)))
     lines.append('Game%20Status=' + _ini_variant(_qvariantmap(status)))
     lines.append('Version=2.0.dev11')
     lines.append('')
@@ -115,7 +192,7 @@ def main():
         'XDG_CONFIG_HOME',
         os.path.join(os.path.expanduser('~'), '.config'),
     )
-    conf_dir = os.path.join(xdg_config, 'NifTools')
+    conf_dir  = os.path.join(xdg_config, 'NifTools')
     conf_path = os.path.join(conf_dir, 'NifSkope 2.0.conf')
 
     if not os.path.exists(conf_path):
